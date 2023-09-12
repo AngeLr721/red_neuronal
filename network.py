@@ -38,12 +38,14 @@ class Network(object):
         return a
         #Al final se devuelve 'a' que representa la salida de la red depues de ejecutar la rpopagación hacia adelante
 
-    def SGD(self, training_data, epochs, mini_batch_size, eta,
+    def SGD_momentum(self, training_data, epochs, mini_batch_size, eta, momentum,
             test_data=None):
         #Ahora definimos la función que nos representará el algoritmo 'Stochastic Gradient Descent', este algortimo se encargará de entrenar las redes neuronales mediante el metodo SGD
         #Definimos tambien los argumentos que tendrá la función con los datos de entramiento 'training_data', las epocas de entrenamiento 'epochs', los paquetes de datos 'mini_batch_size' y la taza de crecimeinto 'eta'
         #y los datos de prueba 'test_data' los cuales opcionales y se pueden utilizar para evaluar el rendimiento de la red en cada época
 
+        #Añadimos el parametro de 'momentum' para poder entrenar de manera más eficienta a la red neuronal
+        
         training_data = list(training_data)
         #Convertimos los datos de entrenamiento en una lista 'training_data' de duplas (x,y) donde 'x' es la entrada de entramiento y 'y' es el dato de contraste con la salida
         n = len(training_data)
@@ -52,6 +54,11 @@ class Network(object):
             test_data = list(test_data)
             n_test = len(test_data)
         #Verificamos si se proporcionan los datos de prueba, se convienten en una lista y se calculan la longitud de los datos para evaluar posteriormente el rendimiento de la red
+             
+        velocidad_w=[np.zeros(w.shape) for w in self.weights]
+        velocidad_b=[np.zeros(b.shape) for b in self.biases]
+        #Definimos las funciones de velocidad de cambio de las variables w y b que se usarán el el algotirmo 'SGD+momentum'
+        
         for j in range(epochs):
         #Iniciamos ahora un blucle iterado sonbre el número especificado de épocas de entrenamiento
             random.shuffle(training_data)
@@ -62,7 +69,7 @@ class Network(object):
             #Ahora los datos de entrenamiento se dividen en paquetes o lotes 'mini_batches'de acuerdo a un tamaño especificado en los argumentos de la función 'mini_batches_sizes'
             #Esto nos crea una lista de lotes donde cada lote es un lista de ejemplos
             for mini_batch in mini_batches:
-                self.update_mini_batch(mini_batch, eta)
+                self.update_mini_batch_momentum(mini_batch, eta, momentum, velocidad_w, velocidad_b)
             #Se itera a través de cada lote pequeño y depués de acabar cada lote se actualizan los pesos y los sesgos de la red neuronal en función de ese lote (función 'update_mini_batch'), Esta parte es fundamental para el entrenamiento
             if test_data:
                 print("Epoch {} : {} / {}".format(j,self.evaluate(test_data),n_test))
@@ -70,14 +77,15 @@ class Network(object):
                 print("Epoch {} complete".format(j))
             #Despues de cada época, se evalúa el rendimiento de la red neuronal utilizando la función 'evaluate' y se imprime el progreso del entrenamiento en términos de la precisión de la red con los datos de prueba
             
-    def update_mini_batch(self, mini_batch, eta):
+    def update_mini_batch_momentum(self, mini_batch, eta, momentum, velocidad_w, velocidad_b):
         """Definimos la función antes declarada que se encargará de actualizar los pesos y los sesgos de la red neuranal con el algoritmo SGD aplicado a los mini batches
         Definimos sus argumentos:
             'mini_batch'
             La lista de duplas (x,y) donde (x) es la entrada de entrenamiento e 'y' la salida correspondiente
             'eta'
-            La taza de aprendizaje que controla la magnitud de las actualizaciones de los pesos durante el entrenamiento
-            """
+            La taza de aprendizaje que controla la magnitud de las actualizaciones de los pesos durante el entrenamiento"""
+            #El nuevo argumento de 'momentum' nos permite establecer un parámetro para el momentum, es siempre al rededor de 0.9
+            
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         #Se inician las listas 'nabla_b' y 'nabla_w' con ceros, estas listas guardaran las los gradientes de los sesgos y pesos
@@ -89,10 +97,11 @@ class Network(object):
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
             #Los gradientes calculados se agregan a las acumulaciones 'nabla_b' y 'nabla_w', esta operación se itera para cada par de datos y se promedian
-        self.weights = [w-(eta/len(mini_batch))*nw
-                        for w, nw in zip(self.weights, nabla_w)]
-        self.biases = [b-(eta/len(mini_batch))*nb
-                       for b, nb in zip(self.biases, nabla_b)]
+        velocidad_w = [momentum*vw - (eta/len(mini_batch))*nw for vw, nw in zip(velocidad_w, nabla_w)]
+        velocidad_b = [momentum*vb - (eta/len(mini_batch))*nb for vb, nb in zip(velocidad_b, nabla_b)]
+        
+        self.weights = [w + vw for w, vw in zip(self.weights, velocidad_w)]
+        self.biases = [b + vb for b, vb in zip(self.biases, velocidad_b)]
         #Finalmente los pesos y los sesgos de la red se actualizan usando los gradientes promediados usando la actualización de SGD donde 'eta' es la taza de aprendizaje y se dividen por el tamaño del lote para promediar todo los gradientes acumulados
     
     def backprop(self, x, y):

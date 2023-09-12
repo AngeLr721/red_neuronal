@@ -10,7 +10,7 @@ import network
 net = network.Network([784, 30, 10])
 #Creamos ahora red neuronal con 784 neuronas de entrada, es decir del largo de nuestras entradas vectorizadas
 #30 neuronas intermedias y 10 neuronas, una por cada dígito
-net.SGD(training_data, 10, 10, 1, test_data=test_data)
+net.SGD_momentum(training_data, 20, 10, 1,0.99, test_data=test_data)
 """Inicia el proceso de entrenamiento de la red utilizando el algorimo SDG
 Los argumentos son
     *'Training_Data'
