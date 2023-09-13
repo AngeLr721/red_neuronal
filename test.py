@@ -5,12 +5,12 @@ training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
 training_data = list(training_data)
 #Convierte los datos en una lista que será el argumento para la función 'network'
 
-import network
+import network_SGD_m
 #Ahora se importa la biblioteca donde está cotenida la red neuronal
-net = network.Network([784, 30, 10])
+net = network_SGD_m.Network([784, 30, 10])
 #Creamos ahora red neuronal con 784 neuronas de entrada, es decir del largo de nuestras entradas vectorizadas
 #30 neuronas intermedias y 10 neuronas, una por cada dígito
-net.SGD_momentum(training_data, 20, 10, 1,0.99, test_data=test_data)
+net.SGD_m(training_data, 30, 10, 0.001,0.99, test_data=test_data)
 """Inicia el proceso de entrenamiento de la red utilizando el algorimo SDG
 Los argumentos son
     *'Training_Data'
